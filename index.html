@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Duck GPA Bonanza 🦆</title>
+<style>
+body { font-family: 'Comic Sans MS', cursive; background: linear-gradient(120deg, #ff9ff3, #feca57, #ff6b6b, #48dbfb); color:#222; text-align:center; padding:20px; }
+h1 { font-size:3em; animation: wiggle 1s infinite; text-shadow:2px 2px #fff; }
+@keyframes wiggle {0%,100%{transform:rotate(-15deg);}50%{transform:rotate(15deg);}}
+.class-board { border:5px dashed yellow; background: rgba(255,255,255,0.3); margin:20px; padding:20px; border-radius:25px; display:inline-block; min-width:300px; vertical-align:top; box-shadow: 5px 5px 15px #222; }
+table { width:100%; border-collapse: collapse; font-size:1em; }
+th, td { border:2px solid orange; padding:5px; }
+th { background:#ffda79; cursor:pointer; }
+button { padding:10px 20px; margin:10px; font-size:1em; border-radius:15px; cursor:pointer; background:#ff6b6b; color:#fff; border:none; transition: transform 0.3s; }
+button:hover { transform: scale(1.2) rotate(10deg); }
+input { width:120px; text-align:center; border-radius:5px; margin:0 5px; }
+.duck-race { margin:30px; font-size:1.5em; white-space: pre; font-weight:bold; animation: bounce 1s infinite; }
+@keyframes bounce {0%,100%{transform:translateY(0);}50%{transform:translateY(-15px);}}
+.confetti { position: fixed; width:12px; height:12px; border-radius:50%; top:0; animation: fall 3s linear infinite; z-index:999; }
+@keyframes fall {0%{top:0; transform: rotate(0deg);} 100%{top:100vh; transform: rotate(360deg);}}
+@keyframes spin {0%{transform: rotate(0deg);}100%{transform: rotate(360deg);}}
+.duck-fly { position:absolute; animation: fly linear infinite; font-size:2em; }
+@keyframes fly {0%{left:-50px; top:10%;} 50%{left:50%; top:30%;} 100%{left:110%; top:50%;}}
+</style>
+</head>
+<body>
+  
+
+
+<h1>Duck GPA Bonanza 🦆</h1>
+
+<div>
+  <input id="studentName" placeholder="Your Name">
+  <input id="className" placeholder="Class Name">
+  <input type="number" id="studentGPA" placeholder="Duck Power Level 0-100">
+  <button onclick="addStudent()">Add Brainiac 🐥</button>
+</div>
+
+<div id="boards"></div>
+
+<h2>🧠 Super Mega Genius General GPA 🧠</h2>
+<div id="generalLeaderboard" class="class-board"></div>
+
+<h2>🏁 Epic Duck Race 🏁</h2>
+<div id="duckRace" class="duck-race"></div>
+
+<script>
+// List of random quack sounds (HTTPS)
+const quackSounds = [
+  "https://interactive-examples.mdn.mozilla.net/media/examples/duck.mp3",
+  "https://interactive-examples.mdn.mozilla.net/media/examples/duck2.mp3",
+  "https://interactive-examples.mdn.mozilla.net/media/examples/duck3.mp3"
+];
+
+// Once the page is loaded
+window.addEventListener('load', () => {
+  // Add a listener for the first user click anywhere
+  const playQuack = () => {
+    document.removeEventListener('click', playQuack); // remove to avoid multiple triggers
+    document.addEventListener('click', () => {
+      const randomIndex = Math.floor(Math.random() * quackSounds.length);
+      const quack = new Audio(quackSounds[randomIndex]);
+      quack.play();
+    });
+  };
+  document.addEventListener('click', playQuack);
+});
+</script>
+
+<script>
+let students = [];
+
+
+
+function addStudent(){
+  let name = document.getElementById('studentName').value.trim();
+  let className = document.getElementById('className').value.trim();
+  let gpa = parseFloat(document.getElementById('studentGPA').value);
+  if(!name || !className || isNaN(gpa) || gpa<0 || gpa>100) { 
+    alert('Enter valid Duck Power Level 0-100!'); 
+    return; 
+  }
+  
+  if(!students[className]) students[className]=[];
+  let existing = students[className].find(s=>s.name===name);
+  if(existing) existing.gpa=gpa; 
+  else students[className].push({name,gpa});
+  
+  updateBoards();
+}
+
+function updateBoards(){
+  let boardsDiv = document.getElementById('boards');
+  boardsDiv.innerHTML='';
+  let general = {};
+  
+  Object.keys(students).forEach(className=>{
+    students[className].sort((a,b)=>b.gpa-a.gpa);
+    let classBoard = document.createElement('div'); classBoard.className='class-board';
+    let html = `<h3>🎓 ${className} Leaderboard 🎓</h3><table><tr><th>🦆 Student</th><th>🧀 Duck Power Level</th></tr>`;
+    students[className].forEach(s=>{ 
+      html+=`<tr><td>${s.name} 🐥</td><td>${s.gpa.toFixed(2)} 🔥</td></tr>`; 
+      if(!general[s.name]) general[s.name]=[];
+      general[s.name].push(s.gpa);
+    });
+    html+='</table>';
+    classBoard.innerHTML=html;
+    boardsDiv.appendChild(classBoard);
+  });
+
+  let genArr = [];
+  for(let name in general){
+    let avg = general[name].reduce((a,b)=>a+b,0)/general[name].length;
+    genArr.push({name, gpa:avg});
+  }
+  genArr.sort((a,b)=>b.gpa-a.gpa);
+
+  let genHtml = `<table><tr><th> Name</th><th>🧠 Super Mega Genius Score</th></tr>`;
+  genArr.forEach((s,i)=>{
+    genHtml+=`<tr><td>${s.name} 🦆</td><td>${s.gpa.toFixed(2)} 🏆</td></tr>`;
+    if(i===0) spawnConfetti();
+  });
+  document.getElementById('generalLeaderboard').innerHTML=genHtml+'</table>';
+
+  runDuckRace(genArr);
+}
+
+function runDuckRace(genArr) {
+
+  // Emoji selector based on GPA
+  function getGpaEmoji(gpa) {
+    if (gpa >= 95) return "🔥";      // absolute demon scholar
+    if (gpa >= 90) return "👍";      // solid A, proud duck
+    if (gpa >= 80) return "😐";      // mid duck
+    if (gpa >= 70) return "😒";      // annoyed duck
+    return "❤️‍🩹";                     // failing duck RAAAH
+  }
+
+  let top8 = genArr.slice(0, 8);
+  let raceDiv = document.getElementById('duckRace');
+  raceDiv.innerHTML = '';
+
+  top8.forEach(s => {
+    let lane = document.createElement('div');
+
+    // distance ducks travel depends on GPA
+    let spaces = ' '.repeat(Math.floor(s.gpa / 3));
+
+    // get the emoji for this GPA
+    let emoji = getGpaEmoji(s.gpa);
+
+    lane.textContent = '🦆' + emoji + spaces + '🏁 ' + s.name;
+    lane.style.animation = 'bounce ' + (0.5 + Math.random()) + 's infinite';
+
+    raceDiv.appendChild(lane);
+  });
+}
+
+
+function spawnConfetti(){
+  for(let i=0;i<50;i++){
+    let conf = document.createElement('div');
+    conf.className='confetti';
+    conf.style.left = Math.random()*window.innerWidth+'px';
+    conf.style.background = ['#ff6b6b','#ffe066','#1dd1a1','#54a0ff','#f368e0','#ff9ff3'][Math.floor(Math.random()*6)];
+    document.body.appendChild(conf);
+    setTimeout(()=>conf.remove(),4000);
+  }
+  spawnFlyingDucks();
+}
+
+function spawnFlyingDucks(){
+  for(let i=0;i<5;i++){
+    let duck = document.createElement('div');
+    duck.className='duck-fly';
+    duck.textContent='🦆';
+    duck.style.top = Math.random()*50 + '%';
+    duck.style.animationDuration = (3+Math.random()*2)+'s';
+    document.body.appendChild(duck);
+    setTimeout(()=>duck.remove(),5000);
+  }
+}
+
+// Initialize
+updateBoards();
+</script>
+</body>
+</html>
